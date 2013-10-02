@@ -6,9 +6,17 @@ def name (text):
 	return re.sub("^:(.*)\r\n",":: \\1[::]1-1-1\r\n",text)
 def pln (text):
 	text = re.sub("pln\s","", text)
+	text = re.sub("^p ","", text)
+	text = re.sub(" p ","", text)
 	return text
 def btn (text):
-	text = re.sub("btn (.*?), (.*?)\r\n","[[\\2|\\1]]\r\n",text)
+	text = re.sub("btn (.*?),(.*?)\r\n","[[\\2|\\1]]\r\n",text)	
+	return text
+def cls (text):
+	text = re.sub("cls\s","<<clrscr>>\r\n",text)
+	return text
+def pause (text):
+	text = re.sub("pause (\d+)","",text)
 	return text
 def inv (text):
 	text = re.sub("inv\+ (\S*)","\\1=1",text)
@@ -20,10 +28,15 @@ def ifthen (text):
 	iflist = re.findall("<<if .*?>>", text)
 	ifnewlist = []
 	for if1 in iflist:
-		 ifnewlist.append("<<if" + re.sub(" ([A-zА-я])"," $\\1",if1[4:]))
+		 newif = re.sub("(\S+) *([\<\>\=])","$\\1\\2",if1[4:-2])
+		 newif = re.sub("([\<\>\=]) *(\D+)","\\1$\\2",newif)
+		 newif = newif.replace(" not "," ! ")
+		 newif = re.sub("(if|and|or|!) ([^[\$!]])","\\1 $\\2","<<if"+newif+">>")
+		 print newif
+		 ifnewlist.append(newif)
 	n = 0
 	for if1 in iflist:
-		ifnewlist[n] = "<<if" + ifnewlist[n][4:-2].replace('=',' eq ').replace('>',' gt ').replace(' $and ',' and ').replace(' $or ',' or ')  + ">>"
+		ifnewlist[n] = "<<if" + ifnewlist[n][4:-2].replace('=',' eq ').replace('>',' gt ').replace('<',' lt ').replace(' $and ',' and ').replace(' $or ',' or ').replace(' $not ',' !')  + ">>"
 		text = text.replace(if1, ifnewlist[n])
 		n = n+1	
 	return text
@@ -46,7 +59,7 @@ def perkill (text):
 	text = text.replace("perkill","<<display 'perkill'>>")
 	text = text+macr
 	return text
-urqfile = open("hamster1.qst").read()
+urqfile = open("Evgeny2.qst").read()
 smfile = open("hamster1.sm",'w')
 paragraph = re.compile("^:[\s\S]*?^end",re.MULTILINE)
 list_par = paragraph.findall(urqfile)
@@ -61,6 +74,8 @@ for par in list_par:
 	par = inv(par)	
 	par = set(par)
 	par = goto(par)
+	par = cls(par)
+	par = pause(par)
 	resuilt = resuilt + par + "\r\n"
 resuilt = perkill(resuilt)
 smfile.write(resuilt)
