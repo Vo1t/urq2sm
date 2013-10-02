@@ -5,6 +5,8 @@ def amp (text):
 def name (text):
 	return re.sub("^:(.*)\r\n",":: \\1[::]1-1-1\r\n",text)
 def pln (text):
+	text = re.sub("[^\S]p ","",text)
+	text = text.replace("#$","")
 	text = re.sub("pln\s","", text)
 	text = re.sub("^p ","", text)
 	text = re.sub(" p ","", text)
@@ -15,11 +17,12 @@ def object(text):
 		newi = i[3:-5].replace(' ','_')
 		newi = newi.replace('_and_',' and ').replace("_or_"," or ").replace("not_","not ").replace('=','~')
 		text = text.replace(i,"if "+newi+" then")
-	iflist = re.findall("(then)*.*=.*",text)
-	for i in iflist:
+	text = re.sub("instr (.*)=(.*)\r\n","\\1='\\2'\r\n",text)
+	iflist = re.findall("[^&\n(then)]*=[^\'&\n(btn )]*",text)
+	for i in iflist:		
 		newi = i.replace(' ','_')
 		newi = newi.replace('_=',' =').replace('=_','= ')
-		text = text.replace(i,newi)
+		text = text.replace(i,newi)		
 	return text
 def btn (text):
 	text = re.sub("btn (.*?), *(.*?)\r\n","[[\\2|\\1]]\r\n",text)	
@@ -31,8 +34,8 @@ def pause (text):
 	text = re.sub("pause (\d+)","",text)
 	return text
 def inv (text):
-	text = re.sub("inv\+ (\S*)","\\1=1",text)
-	text = re.sub("inv\- (\S*)","\\1=0",text)
+	text = re.sub("inv\+ (.*)\r\n","\\1=1\r\n",text)
+	text = re.sub("inv\- (.*)\r\n","\\1=0\r\n",text)
 	return text
 def ifthen (text):
 	text = re.sub("if (.*?) then (.*\r\n)","<<if \\1>> \\2 <<endif>>\r\n",text)
@@ -73,6 +76,7 @@ def perkill (text):
 urqfile = open("Evgeny2.qst").read()
 smfile = open("hamster1.sm",'w')
 paragraph = re.compile("^:[\s\S]*?^end",re.MULTILINE)
+urqfile = inv(urqfile)
 urqfile = object(urqfile)
 list_par = paragraph.findall(urqfile)
 resuilt = ""
@@ -83,7 +87,6 @@ for par in list_par:
 	par = amp(par)
 	par = pln(par)	
 	par = btn(par)
-	par = inv(par)	
 	par = set(par)
 	par = goto(par)
 	par = cls(par)
