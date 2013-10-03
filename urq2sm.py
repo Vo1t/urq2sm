@@ -1,16 +1,19 @@
 #!/usr/bin/python
-# coding: utf8
+# coding: cp1251
 import re
+def comm (text):
+	return re.sub(";.*","",text).replace('#','').replace('$','')
 def name (text):
 	return re.sub("^:(.*)\r\n",":: \\1[::]1-1-1\r\n",text)
 def ifthen (text):
-	text = re.sub("if (.*?) then (.*\r\n)","<<if \\1>>\r\n\\2<<endif>>\r\n",text)
-	iflist = re.findall("<<if .*?>>", text)
+	text = re.sub("then +& +if","and",text,flags=re.I)
+	text = re.sub("if (.*?) then (.*\r\n)","<<if \\1>>\r\n\\2<<endif>>\r\n",text, flags=re.I)
+	iflist = re.findall("<<if .*?>>", text, flags=re.I)
 	ifnewlist = []
 	for i in iflist:
-		newi = re.sub("(if |and |or |not )+(\S)","\\1 $\\2",i)
-		newi = re.sub(" +","_",newi[5:-2])
-		newi = newi.replace('_and_',' and ').replace("_or_"," or ").replace("not_","not ").replace('=','~')
+		newi = re.sub("(if |and |or |not )+(\S)","\\1 $\\2",i, flags=re.I)
+		newi = re.sub(" +","_",newi[5:-2], flags=re.I)
+		newi = re.sub("[_\$*](and|or|not)([_ ])"," \\1 ", newi, flags=re.I).replace('=','~')
 		re.sub("_*([<>~])_*","\\1",newi)
 		newi = "<<if " + newi.replace('~',' eq ').replace('>',' gt ').replace('<',' lt ').replace(' $and ',' and ').replace(' $or ',' or ').replace(' $not ',' !')  + ">>"
 		newi = newi.replace("if _","if ").replace('.','').replace(',','')
@@ -23,12 +26,12 @@ def amp (text):
 def pln (text):
 	text = re.sub("[^\S]p ","",text)
 	text = text.replace("#$","")
-	text = re.sub("pln\s","", text)
-	text = re.sub("^p ","", text)
-	text = re.sub(" p ","", text)
+	text = re.sub("pln\s","", text, flags=re.I)
+	text = re.sub("^p ","", text, flags=re.I)
+	text = re.sub(" p ","", text, flags=re.I)
 	return text
 def btn (text):
-	text = re.sub("btn (.*?), *(.*?)\r\n","[[\\2|\\1]]\r\n",text)	
+	text = re.sub("btn (.*?), *(.*?)\r\n","[[\\2|\\1]]\r\n",text, flags=re.I)	
 	return text
 def cls (text):
 	text = re.sub("cls\s","<<clrscr>>\r\n",text)
@@ -37,7 +40,7 @@ def pause (text):
 	text = re.sub("pause (\d+)","",text)
 	return text
 def goto (text):
-	text = re.sub("goto (\S+)","<<clrscr>>\r\n<<display '\\1'>>",text)
+	text = re.sub("goto (\S+)","<<goto '\\1'>>",text,flags=re.I)
 	return text
 def inv (text):
 	text = re.sub("inv\+ (.*)\r\n","\\1=1\r\n",text)
@@ -57,8 +60,13 @@ def set (text):
 	text = re.sub("\$(\d)","$_\\1",text)
 	text = re.sub("(\$\S+)([\-\+])","\\1 \\2",text)
 	return text
+def rnd (text):
+	text = re.sub("<<set (.*)= *\$rnd\*(.*)>>","<<random \\1 = \\2>>",text)
+	return text
 def start (text):
-	text = ":: start[::]1-1-1\r\n<<display 'perkill'>>\r\n<<display 'начало1'>>\r\n" + text
+	title = re.match(":.*?\r\n",text).group()
+	text = re.sub("(goto|btn|[:]) *start","\\1 start_old",text,flags=re.I)	
+	text = ":start\r\ngoto "+title[1:]+"\r\nend\r\n"+text
 	return text
 def perkill (text):
 	perlist = re.findall("\$[\S]+",text)
@@ -70,17 +78,20 @@ def perkill (text):
 	macr = ":: perkill[::]1-1-1\r\n"
 	for i in plist:
 		macr = macr + "<<set " + i + "=0>>\r\n"
-	text = text.replace("perkill","<<display 'perkill'>>")
+	text = re.sub("perkill","<<display 'perkill'>>",text,flags=re.I)
+	text = re.sub("invkill","",text,flags=re.I)
 	text = text+macr
 	return text	
-urqfile = open("Evgeny2.qst").read()
+urqfile = open("bigsch.qst").read()
 smfile = open("hamster1.sm",'w')
-paragraph = re.compile("^:[\s\S]*?^end",re.MULTILINE)
+urqfile = start(urqfile)
+paragraph = re.compile("^:[\s\S]*?^end",re.MULTILINE|re.I)
 list_par = paragraph.findall(urqfile)
 resuilt = ""
 for par in list_par:
 	par = par[:-3]
-	par =  name(par)
+	par =  comm(par)
+	par =  name(par)	
 	par = ifthen(par)
 	par = amp(par)
 	par = pln(par)	
@@ -91,7 +102,7 @@ for par in list_par:
 	par = inv(par)
 	par = instr(par)
 	par = set(par)
+	par = rnd(par)
 	resuilt = resuilt + par + "\r\n"
 resuilt = perkill(resuilt)
-resuilt = start(resuilt)
 smfile.write(resuilt)
