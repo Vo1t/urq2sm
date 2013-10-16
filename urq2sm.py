@@ -22,13 +22,13 @@ def ifthen (text):
 	text = re.sub("\$(\d)","$_\\1",text)
 	return text
 def amp (text):
-	return text.replace('& ','\r\n')
+	return re.sub(' *\& ','\r\n',text)
 def pln (text):
-	text = re.sub("[^\S]p ","",text)
+	text = re.sub("[^\S]p ","",text,flags=re.I)
 	text = text.replace("#$","")
 	text = re.sub("pln\s","", text, flags=re.I)
-	text = re.sub("^p ","", text, flags=re.I)
-	text = re.sub(" p ","", text, flags=re.I)
+	#text = re.sub("^p ","", text, flags=re.I)
+	#text = re.sub(" p ","", text, flags=re.I)
 	return text
 def btn (text):
 	text = re.sub("btn (.*?), *(.*?)\r\n","[[\\2|\\1]]\r\n",text, flags=re.I)	
@@ -43,8 +43,8 @@ def goto (text):
 	text = re.sub("goto (\S+)","<<goto '\\1'>>",text,flags=re.I)
 	return text
 def inv (text):
-	text = re.sub("inv\+ (.*)\r\n","\\1=1\r\n",text)
-	text = re.sub("inv\- (.*)\r\n","\\1=0\r\n",text)
+	text = re.sub("inv\+ (.*)\r\n","\\1=1\r\n",text,flags=re.I)
+	text = re.sub("inv\- (.*)\r\n","\\1=0\r\n",text,flags=re.I)
 	return text
 def instr(text):
 	text = re.sub("instr (.*)=(.*)\r\n","\\1='\\2'\r\n",text)
