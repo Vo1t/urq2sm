@@ -3,17 +3,17 @@
 import codecs
 import re
 def comm (text):		
-	text = text[text.find("\r\n:")+2:]
-	return re.sub(";.*","",text).replace('#','№').replace('$','S')
-def name (text):
-	text = re.sub("\s*:(.*)\r\n",":: \\1[::]1-1-1\r\n",text[:30]) + re.sub("(\r\n)+:(.*)\r\n","\r\nLABEL\\2LABEL\r\n",text[30:])	
+	text = text[text.find("\r\n:"):]
+	return re.sub(";.*","",text).replace('#','').replace('$','')
+def name (text):	
+	text = re.sub("\s*:(.*)\r\n",":: \\1[::]1-1-1\r\n",text[:70]) + re.sub("(\r\n)+:(.*)\r\n","\r\nLABEL\\2LABEL\r\n",text[70:])		
 	return text
-def ifthen (text):
+def ifthen (text):	
 	text = re.sub("then +& +if","and",text,flags=re.I)
-	text = re.sub("if (.*?) then (.*\r\n)","<<if \\1>>\r\n\\2<<endif>>\r\n",text, flags=re.I)
+	text = re.sub("if (.*?) then (.*\r\n)","<<if \\1>>\r\n\\2<<endif>>\r\n",text, flags=re.I)	
 	iflist = re.findall("<<if .*?>>", text, flags=re.I)
 	ifnewlist = []
-	for i in iflist:
+	for i in iflist:		
 		newi = re.sub("(if |and |or |not )+(\S)","\\1 $\\2",i, flags=re.I)
 		newi = re.sub(" +","_",newi[5:-2], flags=re.I)
 		newi = re.sub("[_\$*](and|or|not)([_ ])"," \\1 ", newi, flags=re.I).replace('=','~')
@@ -86,13 +86,14 @@ def perkill (text):
 	text = re.sub("invkill","",text,flags=re.I)
 	text = text+macr
 	return text	
-urqfile = open("bigsch.qst").read()
+urqfile = open("Evgeny2.qst").read()
 smfile = open("hamster1.sm",'w')
 urqfile = start(urqfile)
-list_par = urqfile.replace('End','end').split('end')
+list_par = urqfile.replace('End','end').split('\r\nend')
 resuilt = "\r\n"
-for par in list_par:		
-	par =  comm(par)
+for par in list_par:			
+	par = par + '\r\n'
+	par =  comm(par)	
 	par =  name(par)	
 	par = ifthen(par)
 	par = amp(par)
@@ -106,6 +107,7 @@ for par in list_par:
 	par = set(par)
 	par = rnd(par)	
 	par = label(par)	
-	resuilt = resuilt + par + "\r\n"
+	resuilt = resuilt + par + "\r\n------------------------------------------------------------\r\n"
 resuilt = perkill(resuilt)
-smfile.write(resuilt.decode('cp1251').encode('utf8'))
+smfile.write(resuilt)
+#.decode('cp1251').encode('utf8'))
