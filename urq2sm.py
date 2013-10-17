@@ -1,10 +1,13 @@
 #!/usr/bin/python
-# coding: cp1251
+# coding: utf8
+import codecs
 import re
-def comm (text):
-	return re.sub(";.*","",text).replace('#','').replace('$','')
+def comm (text):		
+	text = text[text.find("\r\n:")+2:]
+	return re.sub(";.*","",text).replace('#','№').replace('$','S')
 def name (text):
-	return re.sub("^:(.*)\r\n",":: \\1[::]1-1-1\r\n",text)
+	text = re.sub("\s*:(.*)\r\n",":: \\1[::]1-1-1\r\n",text[:30]) + re.sub("(\r\n)+:(.*)\r\n","\r\nLABEL\\2LABEL\r\n",text[30:])	
+	return text
 def ifthen (text):
 	text = re.sub("then +& +if","and",text,flags=re.I)
 	text = re.sub("if (.*?) then (.*\r\n)","<<if \\1>>\r\n\\2<<endif>>\r\n",text, flags=re.I)
@@ -14,8 +17,8 @@ def ifthen (text):
 		newi = re.sub("(if |and |or |not )+(\S)","\\1 $\\2",i, flags=re.I)
 		newi = re.sub(" +","_",newi[5:-2], flags=re.I)
 		newi = re.sub("[_\$*](and|or|not)([_ ])"," \\1 ", newi, flags=re.I).replace('=','~')
-		re.sub("_*([<>~])_*","\\1",newi)
-		newi = "<<if " + newi.replace('~',' eq ').replace('>',' gt ').replace('<',' lt ').replace(' $and ',' and ').replace(' $or ',' or ').replace(' $not ',' !')  + ">>"
+		re.sub("_*([<>~]+)_*","\\1",newi)
+		newi = "<<if " + newi.replace('>~',' gte ').replace('<~',' lte ').replace('~',' eq ').replace('>',' gt ').replace('<',' lt ').replace(' $and ',' and ').replace(' $or ',' or ').replace(' $not ',' !')  + ">>"
 		newi = newi.replace("if _","if ").replace('.','').replace(',','')
 		newi =re.sub("(eq |gt |lt )([^0-9\'])","\\1$\\2", newi)
 		text = text.replace(i, newi)
@@ -27,8 +30,6 @@ def pln (text):
 	text = re.sub("[^\S]p ","",text,flags=re.I)
 	text = text.replace("#$","")
 	text = re.sub("pln\s","", text, flags=re.I)
-	#text = re.sub("^p ","", text, flags=re.I)
-	#text = re.sub(" p ","", text, flags=re.I)
 	return text
 def btn (text):
 	text = re.sub("btn (.*?), *(.*?)\r\n","[[\\2|\\1]]\r\n",text, flags=re.I)	
@@ -63,10 +64,13 @@ def set (text):
 def rnd (text):
 	text = re.sub("<<set (.*)= *\$rnd\*(.*)>>","<<random \\1 = \\2>>",text)
 	return text
+def label (text):
+	text = re.sub("LABEL(.*)LABEL","<<goto '\\1'>>\r\n\r\n:: \\1[::]1-1-1\r\n",text)
+	return text
 def start (text):
 	title = re.match(":.*?\r\n",text).group()
-	text = re.sub("(goto|btn|[:]) *start","\\1 start_old",text,flags=re.I)	
-	text = ":start\r\ngoto "+title[1:]+"\r\nend\r\n"+text
+	text = re.sub("(goto|btn|[:])( *)start","\\1\\2start_old",text,flags=re.I)	
+	text = "\r\n:start\r\ngoto "+title[1:]+"\r\nend\r\n"+text
 	return text
 def perkill (text):
 	perlist = re.findall("\$[\S]+",text)
@@ -85,11 +89,9 @@ def perkill (text):
 urqfile = open("bigsch.qst").read()
 smfile = open("hamster1.sm",'w')
 urqfile = start(urqfile)
-paragraph = re.compile("^:[\s\S]*?^end",re.MULTILINE|re.I)
-list_par = paragraph.findall(urqfile)
-resuilt = ""
-for par in list_par:
-	par = par[:-3]
+list_par = urqfile.replace('End','end').split('end')
+resuilt = "\r\n"
+for par in list_par:		
 	par =  comm(par)
 	par =  name(par)	
 	par = ifthen(par)
@@ -102,7 +104,8 @@ for par in list_par:
 	par = inv(par)
 	par = instr(par)
 	par = set(par)
-	par = rnd(par)
+	par = rnd(par)	
+	par = label(par)	
 	resuilt = resuilt + par + "\r\n"
 resuilt = perkill(resuilt)
-smfile.write(resuilt)
+smfile.write(resuilt.decode('cp1251').encode('utf8'))
