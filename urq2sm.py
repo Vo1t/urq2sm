@@ -9,30 +9,36 @@ def name (text):
 	text = re.sub("\s*:(.*)\r\n",":: \\1[::]1-1-1\r\n",text[:70]) + re.sub("(\r\n)+:(.*)\r\n","\r\nLABEL\\2LABEL\r\n",text[70:])		
 	return text
 def ifthen (text):	
-	text = re.sub("then +& +if","and",text,flags=re.I)
-	text = re.sub("if (.*?) then (.*\r\n)","<<if \\1>>\r\n\\2<<endif>>\r\n",text, flags=re.I)	
+	text = re.sub("then +& +if","and",text,flags=re.I)	
+	text = re.sub("if (.*?) then (.*)\r\n","<<if \\1>>\\2<<endif>>",text, flags=re.I)		
 	iflist = re.findall("<<if .*?>>", text, flags=re.I)
 	ifnewlist = []
-	for i in iflist:		
-		newi = re.sub("(if |and |or |not )+(\S)","\\1 $\\2",i, flags=re.I)
+	for i in iflist:				
+		newi = re.sub("((if |and |or |not )+)(\S)","\\1 $\\3",i, flags=re.I)
 		newi = re.sub(" +","_",newi[5:-2], flags=re.I)
 		newi = re.sub("[_\$*](and|or|not)([_ ])"," \\1 ", newi, flags=re.I).replace('=','~')
 		re.sub("_*([<>~]+)_*","\\1",newi)
 		newi = "<<if " + newi.replace('>~',' gte ').replace('<~',' lte ').replace('~',' eq ').replace('>',' gt ').replace('<',' lt ').replace(' $and ',' and ').replace(' $or ',' or ').replace(' $not ',' !')  + ">>"
 		newi = newi.replace("if _","if ").replace('.','').replace(',','')
 		newi =re.sub("(eq |gt |lt )([^0-9\'])","\\1$\\2", newi)
+		newi =re.sub("not_([^\s\>]+)","!(\\1)",newi)				
 		text = text.replace(i, newi)
 	text = re.sub("\$(\d)","$_\\1",text)
 	return text
 def amp (text):
-	return re.sub(' *\& ','\r\n',text)
-def pln (text):
-	text = re.sub("[^\S]p ","",text,flags=re.I)
-	text = text.replace("#$","")
-	text = re.sub("pln\s","", text, flags=re.I)
+	return re.sub(' *\& ',' ',text)
+def pln (text):	
+	text = re.sub("pln (.*?)&","\r\n\\1\r\n",text,flags=re.I)
+	text = re.sub("pln (.*?)<","\r\n\\1\r\n<",text,flags=re.I)
+	text = re.sub("pln (.*?)\r\n","\r\n\\1\r\n",text,flags=re.I)
+#	text = re.sub("pln","\r\n",text,flags=re.I)
+#	text = re.sub("[^\S]p ","",text,flags=re.I)	
+#	text = text.replace("#$","\r\n")
+#	text = re.sub("pln\s","", text, flags=re.I)	
 	return text
 def btn (text):
-	text = re.sub("btn (.*?), *(.*?)\r\n","[[\\2|\\1]]\r\n",text, flags=re.I)	
+	text = re.sub("btn (.*?), *(.*?)<","[[\\2|\\1]]\r\n<",text, flags=re.I)	
+	text = re.sub("btn (.*?), *(.*?)\r\n","[[\\2|\\1]]\r\n",text, flags=re.I)		
 	return text
 def cls (text):
 	text = re.sub("cls\s","<<clrscr>>\r\n",text)
@@ -41,19 +47,20 @@ def pause (text):
 	text = re.sub("pause (\d+)","",text)
 	return text
 def goto (text):
-	text = re.sub("goto (\S+)","<<goto '\\1'>>",text,flags=re.I)
+	text = re.sub("goto ([^\s\<]+)","<<display '\\1'>>",text,flags=re.I)
 	return text
-def inv (text):
-	text = re.sub("inv\+ (.*)\r\n","\\1=1\r\n",text,flags=re.I)
-	text = re.sub("inv\- (.*)\r\n","\\1=0\r\n",text,flags=re.I)
+def inv (text):	
+	text = re.sub("inv\+ (.*?)(\r\n|<)","\\1=1\\2",text,flags=re.I)
+	text = re.sub("inv\- (.*?)(\r\n|<)","\\1=0\\2",text,flags=re.I)	
 	return text
 def instr(text):
 	text = re.sub("instr (.*)=(.*)\r\n","\\1='\\2'\r\n",text)
 	return text
 def set (text):
-	text = re.sub("([^>\s=][^>=\n]+)=(.*)\r\n","<<set $\\1=\\2>>\r\n",text)
-	setlist  = re.findall("\$.*?=\s*.",text)
-	for i in setlist:
+	print text
+	text = re.sub("([^<>\s=][^<>=\n]+)=([^<\r\n]*)(\r\n|\<)","<<set $\\1=\\2>>\\3",text)	
+	setlist  = re.findall("\$[^>]*?=\s*.",text)
+	for i in setlist:		
 		newi = i.replace(' ','_').replace('=',' =')
 		newi = re.sub("([=\-\+])([^0-9\'])","\\1 $\\2",newi)
 		newi = newi.replace('=','= ').replace('.','').replace(',','')		
@@ -73,7 +80,7 @@ def start (text):
 	text = "\r\n:start\r\ngoto "+title[1:]+"\r\nend\r\n"+text
 	return text
 def perkill (text):
-	perlist = re.findall("\$[\S]+",text)
+	perlist = re.findall("\$[^\s\)\[\<>]+",text)
 	plist = []
 	for p in perlist:
 		p = p.replace('>','')
@@ -96,8 +103,8 @@ for par in list_par:
 	par =  comm(par)	
 	par =  name(par)	
 	par = ifthen(par)
-	par = amp(par)
-	par = pln(par)	
+	par = pln(par)
+	par = amp(par)		
 	par = btn(par)
 	par = cls(par)
 	par = pause(par)
