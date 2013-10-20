@@ -10,8 +10,9 @@ def clear (filename):
 			s = s + " & <<endif>>"
 			k = k + 1
 		s = s.replace(" then "," & ")
-		s = s.replace("perkill","goto perkill")
-		s = s.replace("invkill","goto perkill")
+		s = s.replace(" else ","& <<else>> &")
+		s = s.replace("perkill","<<display 'perkill'>>")
+		s = s.replace("invkill","<<display 'perkill'>>")
 		alist = s.split('&')
 		j = 0
 		for a in alist:
@@ -80,11 +81,13 @@ def name (text):
 	text = re.sub(":(.*)","::\\1[::]1-1-1",text)
 	return text
 def ifthen (text):			
-	if text[:3].lower() <> "if ": return text			
+	if text[:3].lower() <> "if ": return text
 	newi = re.sub(" *(<|>|=|<=|>=|<>) *","\\1",text)
-	newi = re.sub("((if |and |or |not )+)(\S)","\\1$\\3",newi, flags=re.I)		
-	newi = re.sub(" +","_",newi[3:])
-	newi = re.sub("[_\$*](and|or|not)([_ ])"," \\1 ", newi, flags=re.I).replace('=','~')		
+	newi = re.sub(" +"," ",newi)
+	newi = re.sub("\)(\S)",") \\1",newi)
+	newi = re.sub("((if |and |or |not |\()+)(\S)","\\1$\\3",newi, flags=re.I)		
+	newi = re.sub(" +","_",newi[3:])	
+	newi = re.sub("[_ ](and|or|not)([_ ])"," \\1 ", newi, flags=re.I).replace('=','~')		
 	re.sub("_*([<>~]+)_*","\\1",newi)		
 	newi = "if " + newi.replace('>~',' gte ').replace('<>'," neq ").replace('<~',' lte ').replace('~',' eq ').replace('>',' gt ').replace('<',' lt ').replace(' $and ',' and ').replace(' $or ',' or ').replace(' $not ',' !') 
 	newi = newi.replace("if _","if ").replace('.','').replace(',','')
@@ -127,7 +130,7 @@ def instr(text):
 	text = "<<set " + text + ">>"
 	return text
 def goto(text):
-	text = re.sub("goto (.*)","<<display '\\1'>>",text,flags=re.I)
+	text = re.sub("goto (.*)","<<display '\\1'>>\n<<display '_break'>>",text,flags=re.I)
 	return text
 def rnd (text):
 	text = re.sub("<<set (.*)=\$rnd\*(.*)>>","<<random \\1 = \\2>>",text)
@@ -143,6 +146,7 @@ def pause (text):
 	text = re.sub("pause (\d+)","",text)
 	return text
 def label (text):
+	if text == "": return text
 	if text[0] == ':':
 		text = re.sub(":(.*)","<<display '\\1'>>\n::\\1[::]1-1-1\n",text)
 	return text
@@ -156,7 +160,7 @@ def pln (text):
 def btnstr (text):
 	text = re.sub("^(.*)\[\[","\\1\n[[",text,flags=re.M)
 	return text
-urqfile = clear("GLUBINA.QST")
+urqfile = clear("GEM.qst")
 smfile = open("hamster1.sm",'w')
 urqfile = start(urqfile)
 urqfile = btnuse(urqfile)
@@ -190,4 +194,5 @@ for par in list_par:
 	resuilt = resuilt + plist[0] + '\n' + ' '.join(plist[1:]) + '\n' + '\n'
 resuilt = btnstr(resuilt)
 resuilt = resuilt + perkill(resuilt)
+resuilt = resuilt + "\n::_break[::]1-1-1\n-------------------\n"
 smfile.write(resuilt.decode('cp1251').encode('utf8'))
