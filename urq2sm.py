@@ -134,7 +134,7 @@ def instr(text):
 	text = "<<set " + text + ">>"
 	return text
 def goto(text):
-	text = re.sub("goto (.*)","<<display '\\1'>>\n<<display '_break'>>",text,flags=re.I)
+	text = re.sub("goto (.*)","<<display '\\1'>>\n",text,flags=re.I)
 	return text
 def rnd (text):
 	text = re.sub("<<set (.*)=\$rnd\*(.*)>>","<<random \\1 = \\2>>",text)
@@ -203,5 +203,4 @@ for par in list_par:
 	resuilt = resuilt + plist[0] + '\n' + ' '.join(plist[1:]) + '\n' + '\n'
 resuilt = btnstr(resuilt)
 resuilt = resuilt + perkill(resuilt)
-resuilt = resuilt + "\n::_break[::]1-1-1\n-------------------\n"
 smfile.write(resuilt.decode('cp1251').encode('utf8'))
