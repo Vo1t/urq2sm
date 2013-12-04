@@ -1,18 +1,17 @@
 import re
+import sys
 keywords = ['if','btn','p','pln','instr']
 def clear (filename):
 	slist = open(filename).readlines()
 	i = 0
-	for s in slist:
-		n = s.count(" then ")
-		k = 0
-		while k < n:
-			s = s + " & <<endif>>"
-			k = k + 1
-		s = s.replace(" then "," & ")
-		s = s.replace(" else ","& <<else>> &")
-		s = s.replace("perkill","<<display 'perkill'>>")
-		s = s.replace("invkill","<<display 'perkill'>>")
+	for s in slist:		
+		n = s.lower().count(" then ")
+		s = s + " & <<endif>>" * n			
+		s = re.sub(" then "," & ",s,flags=re.I)		
+		s = re.sub(" else ","& <<else>> &",s,flags=re.I)
+		s = re.sub("perkill","<<display 'perkill'>>",s,flags=re.I)
+		s = re.sub("invkill","<<display 'perkill'>>",s,flags=re.I)
+		s = re.sub("inv_","",s,flags=re.I)
 		alist = s.split('&')
 		j = 0
 		for a in alist:
@@ -22,13 +21,13 @@ def clear (filename):
 		slist[i] = s.strip()
 		i = i+1
 	text = "\n".join(slist)
-	text = re.sub("^;.*$","",text,flags=re.M)
+	text = re.sub(";.*$","",text,flags=re.M)
 	text = re.sub("\n+","\n",text)	
 	return text
 def start (text):
 	title = re.findall("^:.*$",text,flags=re.M)[0]
 	text = re.sub("(goto|btn|:)( *)start","\\1\\2start_old",text,flags=re.I)		
-	text = "\n" + ":start" + "\n" + "goto "+ title[1:] + '\n' + "end" + "\n" + text
+	text = "\n" + ":start" + "\n" + "<<display 'perkill'>>" + '\n' + "goto "+ title[1:] + '\n' + "end" + "\n" + text
 	return text
 def btnuse(text):
 	text = re.sub("^: ",":",text,flags=re.M)
@@ -120,10 +119,15 @@ def set (text):
 	return text
 def inv (text):		
 	if text[:3].lower() <> "inv": return text
-	text = re.sub("inv\+ (.*)","\\1=1",text,flags=re.I)
-	text = re.sub("inv\- (.*)","\\1=0",text,flags=re.I)	
-	text = text.replace(',',' ').replace('.','')
-	return text
+	count = text.find(',')
+	if count == -1:
+		text = re.sub("inv\+ (.*)","\\1=1",text,flags=re.I)
+		text = re.sub("inv\- (.*)","\\1=0",text,flags=re.I)	
+		return text
+	else:
+		text = re.sub("inv\+ (.*), *(.*)","\\2=\\2+\\1",text,flags=re.I)
+		text = re.sub("inv\- (.*), *(.*)","\\2=\\2-\\1",text,flags=re.I)	
+		return text		
 def instr(text):
 	if text[:5].lower <> "instr": return text
 	text = re.sub("instr (.*)=(.*)","\\1='\\2'",text)
@@ -151,7 +155,7 @@ def label (text):
 		text = re.sub(":(.*)","<<display '\\1'>>\n::\\1[::]1-1-1\n",text)
 	return text
 def pln (text):
-	if text == "pln": text = "\n"
+	if text.lower() == "pln": text = "\n"
 	if text[:4].lower() == "pln ":
 		text = text[4:] + '\n'	
 	if text[:2].lower() == "p ":
@@ -160,7 +164,11 @@ def pln (text):
 def btnstr (text):
 	text = re.sub("^(.*)\[\[","\\1\n[[",text,flags=re.M)
 	return text
-urqfile = clear("GEM.qst")
+def podst (text):
+	text = re.sub("\#(\S+)\$","<<print $\\1>>",text)
+	text = text.replace("#$","")
+	return text
+urqfile = clear(sys.argv[1])
 smfile = open("hamster1.sm",'w')
 urqfile = start(urqfile)
 urqfile = btnuse(urqfile)
@@ -186,6 +194,7 @@ for par in list_par:
 			a = cls(a)
 			a = pause(a)
 			a = label(a)
+			a = podst(a)
 			a = pln(a)
 			alist[j] = a
 			j = j+1
